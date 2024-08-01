@@ -41,3 +41,8 @@ button:disabled {
 small {
   color: red;
 }
+
+.error-message {
+  color: red;
+  margin-bottom: 1em;
+}

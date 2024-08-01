@@ -1,25 +1,17 @@
-import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Injectable } from '@angular/core';
+import { Observable, of, throwError } from 'rxjs';
 
-@Component({
-  selector: 'app-login',
-  templateUrl: './login.component.html',
-  styleUrls: ['./login.component.css']
+@Injectable({
+  providedIn: 'root'
 })
-export class LoginComponent {
-  loginForm: FormGroup;
+export class AuthService {
+  private mockUser = { email: 'test@example.com', password: 'password123' };
 
-  constructor(private fb: FormBuilder) {
-    this.loginForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]]
-    });
-  }
-
-  onSubmit() {
-    if (this.loginForm.valid) {
-      console.log('Form Submitted', this.loginForm.value);
-      // Perform your login logic here
+  login(email: string, password: string): Observable<any> {
+    if (email === this.mockUser.email && password === this.mockUser.password) {
+      return of({ success: true });
+    } else {
+      return throwError({ success: false, message: 'Invalid credentials' });
     }
   }
 }

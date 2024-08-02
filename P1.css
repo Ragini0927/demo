@@ -1,48 +1,43 @@
-.login-container {
-  max-width: 300px;
-  margin: auto;
-  padding: 1em;
+.checkout-box {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background-color: #f9f9f9;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px;
   border: 1px solid #ccc;
   border-radius: 5px;
 }
 
-div {
-  margin-bottom: 1em;
-}
-
-label {
-  margin-bottom: .5em;
-  color: #333333;
-  display: block;
-}
-
-input {
-  border: 1px solid #CCCCCC;
-  padding: .5em;
-  font-size: 1em;
-  width: 100%;
-  box-sizing: border-box;
+.error {
+  color: red;
+  font-size: 12px;
 }
 
 button {
-  padding: 0.7em;
-  color: #fff;
-  background-color: #007BFF;
+  padding: 10px 20px;
   border: none;
+  background-color: #007bff;
+  color: white;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 1em;
 }
 
 button:disabled {
-  background-color: #CCCCCC;
-}
-
-small {
-  color: red;
-}
-
-.error-message {
-  color: red;
-  margin-bottom: 1em;
+  background-color: #ccc;
 }

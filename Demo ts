@@ -1,0 +1,107 @@
+import { Component } from '@angular/core';
+
+interface Student {
+  id: number;
+  sname: string;
+  result: string;
+}
+
+@Component({
+  selector: 'app-parent',
+  templateUrl: './parent.component.html',
+  styleUrls: ['./parent.component.css']
+})
+export class ParentComponent {
+  students: Student[] = [
+    { id: 1, sname: 'Kiran', result: 'FAIL' },
+    { id: 2, sname: 'Hari', result: 'PASS' },
+    { id: 3, sname: 'GIRI', result: 'PASS' },
+    { id: 4, sname: 'Ramesh', result: 'PASS' },
+    { id: 5, sname: 'Suresh', result: 'PASS' }
+  ];
+}
+
+
+
+
+import { Component, Input } from '@angular/core';
+
+interface Student {
+  id: number;
+  sname: string;
+  result: string;
+}
+
+@Component({
+  selector: 'app-child',
+  templateUrl: './child.component.html',
+  styleUrls: ['./child.component.css']
+})
+export class ChildComponent {
+  @Input() students: Student[] = [];
+
+  filter: string = 'All';
+
+  get filteredStudents(): Student[] {
+    if (this.filter === 'All') {
+      return this.students;
+    }
+    return this.students.filter(student => student.result === this.filter.toUpperCase());
+  }
+
+  get countAll(): number {
+    return this.students.length;
+  }
+
+  get countPass(): number {
+    return this.students.filter(student => student.result === 'PASS').length;
+  }
+
+  get countFail(): number {
+    return this.students.filter(student => student.result === 'FAIL').length;
+  }
+
+  setFilter(filter: string) {
+    this.filter = filter;
+  }
+}
+
+
+
+
+
+<div style="border: 1px solid black; padding: 10px; margin: 10px;">
+  <h3>Child Component</h3>
+  <div>
+    <button (click)="setFilter('All')">All ({{ countAll }})</button>
+    <button (click)="setFilter('Fail')">Fail ({{ countFail }})</button>
+    <button (click)="setFilter('Pass')">Pass ({{ countPass }})</button>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>id</th>
+        <th>sname</th>
+        <th>result</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let student of filteredStudents">
+        <td>{{ student.id }}</td>
+        <td>{{ student.sname }}</td>
+        <td>{{ student.result }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+
+
+<div style="border: 1px solid black; padding: 10px; margin: 10px;">
+  <h2>Parent Component</h2>
+  <app-child [students]="students"></app-child>
+</div>
+
+
+

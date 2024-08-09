@@ -1,56 +1,92 @@
 import React, { useState } from 'react';
-import ProductLiability from './ProductLiability';
-import ProductCart from './ProductCart';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
-function App() {
-  const [cart, setCart] = useState([]);
-  const [startTime, setStartTime] = useState(null);
-  const [stopTime, setStopTime] = useState(null);
+function FruitList() {
+  const initialFruits = [
+    { id: 1, name: 'Apple', price: 2 },
+    { id: 2, name: 'Banana', price: 1 },
+    { id: 3, name: 'Cherry', price: 3 }
+  ];
 
-  const addToCart = (product) => {
-    if (!cart.includes(product)) {
-      setCart([...cart, product]);
-    }
+  const [fruits, setFruits] = useState(initialFruits);
+  const [editFruitId, setEditFruitId] = useState(null);
+  const [editName, setEditName] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleEditClick = (fruit) => {
+    setEditFruitId(fruit.id);
+    setEditName(fruit.name);
+    setEditPrice(fruit.price);
   };
 
-  const removeFromCart = (product) => {
-    setCart(cart.filter(item => item.id !== product.id));
+  const handleSaveClick = () => {
+    setFruits(fruits.map(fruit => 
+      fruit.id === editFruitId ? { ...fruit, name: editName, price: parseFloat(editPrice) } : fruit
+    ));
+    setEditFruitId(null);
+    setEditName('');
+    setEditPrice('');
   };
 
-  const handleStartTime = () => {
-    const currentTime = new Date().toLocaleTimeString();
-    setStartTime(currentTime);
+  const handleCancelClick = () => {
+    setEditFruitId(null);
+    setEditName('');
+    setEditPrice('');
   };
 
-  const handleStopTime = () => {
-    const currentTime = new Date().toLocaleTimeString();
-    setStopTime(currentTime);
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value.toLowerCase());
   };
+
+  const filteredFruits = fruits.filter(fruit => fruit.name.toLowerCase().includes(searchQuery));
 
   return (
-    <div>
-      <div style={{
-        position: 'absolute',
-        top: 20,
-        right: 20,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-end'
-      }}>
-        <div>
-          <button className="btn btn-primary" onClick={handleStartTime}>Set Start Time</button>
-          <button className="btn btn-danger ml-2" onClick={handleStopTime}>Set Stop Time</button>
+    <div className="container">
+      <div className="row">
+        <div className="col-md-3">
+          <input
+            type="text"
+            className="form-control mb-4"
+            placeholder="Search fruits"
+            value={searchQuery}
+            onChange={handleSearchChange}
+          />
         </div>
-        <div style={{ marginTop: 10 }}>
-          <p>Start Time: {startTime || 'Not Set'}</p>
-          <p>Stop Time: {stopTime || 'Not Set'}</p>
+        <div className="col-md-9">
+          <ul className="list-group">
+            {filteredFruits.map(fruit => (
+              <li key={fruit.id} className="list-group-item d-flex justify-content-between align-items-center">
+                {editFruitId === fruit.id ? (
+                  <div className="d-flex align-items-center">
+                    <input
+                      type="text"
+                      className="form-control mr-2"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                    />
+                    <input
+                      type="number"
+                      className="form-control mr-2"
+                      value={editPrice}
+                      onChange={(e) => setEditPrice(e.target.value)}
+                    />
+                    <button className="btn btn-primary mr-2" onClick={handleSaveClick}>Save</button>
+                    <button className="btn btn-secondary" onClick={handleCancelClick}>Cancel</button>
+                  </div>
+                ) : (
+                  <>
+                    <span>{fruit.name} - ${fruit.price.toFixed(2)}</span>
+                    <button className="btn btn-warning btn-sm" onClick={() => handleEditClick(fruit)}>Edit</button>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
-      
-      <ProductLiability addToCart={addToCart} removeFromCart={removeFromCart} cart={cart} />
-      <ProductCart cart={cart} />
     </div>
   );
 }
 
-export default App;
+export default FruitList;

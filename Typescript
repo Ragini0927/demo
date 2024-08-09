@@ -1,37 +1,56 @@
-import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { AuthService } from '../auth.service';
+import React, { useState } from 'react';
+import ProductLiability from './ProductLiability';
+import ProductCart from './ProductCart';
 
-@Component({
-  selector: 'app-login',
-  templateUrl: './login.component.html',
-  styleUrls: ['./login.component.css']
-})
-export class LoginComponent {
-  loginForm: FormGroup;
-  errorMessage: string | null = null;
+function App() {
+  const [cart, setCart] = useState([]);
+  const [startTime, setStartTime] = useState(null);
+  const [stopTime, setStopTime] = useState(null);
 
-  constructor(private fb: FormBuilder, private authService: AuthService) {
-    this.loginForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]]
-    });
-  }
-
-  onSubmit() {
-    if (this.loginForm.valid) {
-      const { email, password } = this.loginForm.value;
-      this.authService.login(email, password).subscribe({
-        next: (response) => {
-          if (response.success) {
-            console.log('Login successful');
-            // Perform additional actions on successful login (e.g., navigate to dashboard)
-          }
-        },
-        error: (error) => {
-          this.errorMessage = error.message;
-        }
-      });
+  const addToCart = (product) => {
+    if (!cart.includes(product)) {
+      setCart([...cart, product]);
     }
-  }
+  };
+
+  const removeFromCart = (product) => {
+    setCart(cart.filter(item => item.id !== product.id));
+  };
+
+  const handleStartTime = () => {
+    const currentTime = new Date().toLocaleTimeString();
+    setStartTime(currentTime);
+  };
+
+  const handleStopTime = () => {
+    const currentTime = new Date().toLocaleTimeString();
+    setStopTime(currentTime);
+  };
+
+  return (
+    <div>
+      <div style={{
+        position: 'absolute',
+        top: 20,
+        right: 20,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-end'
+      }}>
+        <div>
+          <button className="btn btn-primary" onClick={handleStartTime}>Set Start Time</button>
+          <button className="btn btn-danger ml-2" onClick={handleStopTime}>Set Stop Time</button>
+        </div>
+        <div style={{ marginTop: 10 }}>
+          <p>Start Time: {startTime || 'Not Set'}</p>
+          <p>Stop Time: {stopTime || 'Not Set'}</p>
+        </div>
+      </div>
+      
+      <ProductLiability addToCart={addToCart} removeFromCart={removeFromCart} cart={cart} />
+      <ProductCart cart={cart} />
+    </div>
+  );
 }
+
+export default App;

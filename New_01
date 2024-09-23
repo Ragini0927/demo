@@ -1,0 +1,146 @@
+// store.js
+import { configureStore } from '@reduxjs/toolkit';
+import userReducer from './userSlice';
+
+const store = configureStore({
+  reducer: {
+    users: userReducer,
+  },
+});
+
+export default store;
+
+
+// userSlice.js
+import { createSlice } from '@reduxjs/toolkit';
+
+const initialState = {
+  users: [],
+};
+
+const userSlice = createSlice({
+  name: 'users',
+  initialState,
+  reducers: {
+    addUser(state, action) {
+      state.users.push(action.payload);
+    },
+    setUsers(state, action) {
+      state.users = action.payload;
+    },
+  },
+});
+
+export const { addUser, setUsers } = userSlice.actions;
+
+export default userSlice.reducer;
+
+
+import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { addUser } from './userSlice';
+import { addUserAPI } from './api';
+
+const AddUser = () => {
+  const [form, setForm] = useState({
+    firstName: '',
+    lastName: '',
+    country: '',
+    phoneNumber: '',
+  });
+  
+  const dispatch = useDispatch();
+
+  const isValidForm = form.firstName && form.lastName && form.country && form.phoneNumber;
+
+  const handleChange = (e) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = async () => {
+    if (isValidForm) {
+      const response = await addUserAPI(form);
+      if (response.success) {
+        dispatch(addUser(response.user));  // Dispatch addUser action
+      }
+    }
+  };
+
+  return (
+    <div style={{ padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
+      <h3>Add New User</h3>
+      <input type="text" name="firstName" placeholder="First Name" onChange={handleChange} />
+      <input type="text" name="lastName" placeholder="Last Name" onChange={handleChange} />
+      <input type="text" name="country" placeholder="Country" onChange={handleChange} />
+      <input type="text" name="phoneNumber" placeholder="Phone Number" onChange={handleChange} />
+      <button onClick={handleSubmit} disabled={!isValidForm}>
+        Add User
+      </button>
+    </div>
+  );
+};
+
+export default AddUser;
+
+
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { setUsers } from './userSlice';
+import { fetchUsersAPI } from './api';
+
+const DisplayUsers = () => {
+  const dispatch = useDispatch();
+  const users = useSelector((state) => state.users.users);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await fetchUsersAPI();
+      if (response) {
+        dispatch(setUsers(response));
+      }
+    };
+
+    fetchData();
+  }, [dispatch]);
+
+  return (
+    <div>
+      <h3>Users List</h3>
+      <ul>
+        {users.map((user, index) => (
+          <li key={index}>
+            {user.firstName} {user.lastName} ({user.country}) - {user.phoneNumber}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+export default DisplayUsers;
+
+
+// App.js
+import React from 'react';
+import { BrowserRouter as Router, Route, Switch, NavLink } from 'react-router-dom';
+import AddUser from './AddUser';
+import DisplayUsers from './DisplayUsers';
+
+const App = () => (
+  <Router>
+    <nav>
+      <NavLink to="/add-user">Add User</NavLink>
+      <NavLink to="/users">Users</NavLink>
+    </nav>
+    <Switch>
+      <Route path="/add-user" component={AddUser} />
+      <Route path="/users" component={DisplayUsers} />
+    </Switch>
+  </Router>
+);
+
+export default App;
+

@@ -1,4 +1,9 @@
-import React, { Component } from 'react';
+Can you check if I missed something?
+First, I installed VS Code, then I installed Git Bash and Node.js (version 14.xx).
+After that, I ran the git clone command with the repo URL in the command prompt.
+Then, I opened the terminal, navigated to the ui.frontend directory, and ran npm i.
+Afterward, I ran npm run start, but then I encountered an error.
+Are all the steps correct, or am I missing something?"import React, { Component } from 'react';
 import axios from 'axios';
 
 class AdminComponent extends Component {

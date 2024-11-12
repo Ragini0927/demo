@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+yy<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -223,5 +223,106 @@ const App = () => {
     </div>
   );
 };
+
+export default App;
+
+import React, { useState } from 'react';
+
+function App() {
+  const [formData, setFormData] = useState({
+    name: '',
+    age: '',
+    gender: '',
+    address: '',
+    city: '',
+    state: '',
+    country: '',
+    phone: '',
+  });
+
+  const [errors, setErrors] = useState({});
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.name) newErrors.name = 'Name is required';
+    if (!formData.age) newErrors.age = 'Age is required';
+    if (!formData.gender) newErrors.gender = 'Gender is required';
+    if (!formData.address) newErrors.address = 'Address is required';
+    if (!formData.city) newErrors.city = 'City is required';
+    if (!formData.state) newErrors.state = 'State is required';
+    if (!formData.country) newErrors.country = 'Country is required';
+    if (!formData.phone) newErrors.phone = 'Phone number is required';
+
+    return newErrors;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const validationErrors = validateForm();
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length === 0) {
+      alert('Form submitted successfully!');
+      setFormData({
+        name: '',
+        age: '',
+        gender: '',
+        address: '',
+        city: '',
+        state: '',
+        country: '',
+        phone: '',
+      });
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+      <form onSubmit={handleSubmit} style={{ width: '300px', border: '1px solid #ccc', padding: '20px', borderRadius: '8px' }}>
+        <h2>Form</h2>
+        {Object.keys(formData).map((key) => (
+          <div key={key} style={{ marginBottom: '10px' }}>
+            <label>
+              {key.charAt(0).toUpperCase() + key.slice(1)}:
+              <input
+                type={key === 'age' || key === 'phone' ? 'number' : 'text'}
+                name={key}
+                value={formData[key]}
+                onChange={handleChange}
+                style={{ display: 'block', width: '100%', padding: '5px', marginTop: '5px' }}
+              />
+            </label>
+            {errors[key] && <p style={{ color: 'red', fontSize: '12px' }}>{errors[key]}</p>}
+          </div>
+        ))}
+        <div>
+          <label>
+            Gender:
+            <select
+              name="gender"
+              value={formData.gender}
+              onChange={handleChange}
+              style={{ display: 'block', width: '100%', padding: '5px', marginTop: '5px' }}
+            >
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+          {errors.gender && <p style={{ color: 'red', fontSize: '12px' }}>{errors.gender}</p>}
+        </div>
+        <button type="submit" style={{ marginTop: '20px', padding: '10px', width: '100%' }}>Submit</button>
+      </form>
+    </div>
+  );
+}
 
 export default App;

@@ -140,3 +140,126 @@ const ProductDetail = () => {
         </div>
     );
 };
+
+
+import React, { useState } from "react";
+
+const Login = () => {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+
+        // Fetch users data
+        const response = await fetch("/users.json");
+        const users = await response.json();
+
+        // Check if user exists
+        const user = users.find(
+            (u) => u.email === email && u.password === password
+        );
+
+        if (user) {
+            // Store session in localStorage
+            localStorage.setItem("isLoggedIn", "true");
+            localStorage.setItem("userEmail", email);
+            setError("");
+            alert("Login successful!");
+            window.location.reload(); // Reload the page after login
+        } else {
+            setError("Invalid credentials or user not registered.");
+        }
+    };
+
+    return (
+        <>
+            <button
+                type="button"
+                className="btn btn-outline-primary ms-auto"
+                data-bs-toggle="modal"
+                data-bs-target="#loginModal"
+            >
+                <span className="fa fa-sign-in me-1"></span> Login
+            </button>
+
+            <div
+                className="modal fade"
+                id="loginModal"
+                tabIndex="-1"
+                aria-labelledby="exampleModalLabel"
+                aria-hidden="true"
+            >
+                <div className="modal-dialog">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h5 className="modal-title" id="exampleModalLabel">
+                                Login
+                            </h5>
+                            <button
+                                type="button"
+                                className="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Close"
+                            ></button>
+                        </div>
+                        <div className="modal-body">
+                            <form onSubmit={handleLogin}>
+                                <div className="mb-3">
+                                    <label
+                                        htmlFor="exampleInputEmail1"
+                                        className="form-label"
+                                    >
+                                        Email address
+                                    </label>
+                                    <input
+                                        type="email"
+                                        className="form-control"
+                                        id="exampleInputEmail1"
+                                        value={email}
+                                        onChange={(e) =>
+                                            setEmail(e.target.value)
+                                        }
+                                        required
+                                    />
+                                </div>
+                                <div className="mb-3">
+                                    <label
+                                        htmlFor="exampleInputPassword1"
+                                        className="form-label"
+                                    >
+                                        Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        className="form-control"
+                                        id="exampleInputPassword1"
+                                        value={password}
+                                        onChange={(e) =>
+                                            setPassword(e.target.value)
+                                        }
+                                        required
+                                    />
+                                </div>
+                                {error && (
+                                    <div className="text-danger mb-3">
+                                        {error}
+                                    </div>
+                                )}
+                                <button
+                                    type="submit"
+                                    className="btn btn-outline-primary w-100 mt-3"
+                                >
+                                    Submit
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </>
+    );
+};
+
+export default Login;

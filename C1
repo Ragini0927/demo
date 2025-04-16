@@ -1,35 +1,74 @@
-import * as html2canvasModule from 'html2canvas';
+import { of } from 'rxjs';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import { AgreementsComponent } from './agreements.component';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { AccountSettingsService } from '../../../account-settings.service';
+import { UserprofileService } from '../../../userprofile/userprofile.service';
 
-it('should generate and download a PDF for privacy policy', async () =>
-{
-	const mockHtml = '<div>{{policyContent}}</div><div>{{contentHeading}}</div>';
-	const spyHttpGet = spyOn(httpClient, 'get').and.returnValue(of(mockHtml));
+describe('AgreementsComponent - downloadPdf', () => {
+	let component: AgreementsComponent;
+	let fixture: ComponentFixture<AgreementsComponent>;
+	let httpClientSpy: jasmine.SpyObj<any>;
 
-	const canvasMock = document.createElement('canvas');
-	Object.defineProperty(canvasMock, 'width', { value: 1000 });
-	Object.defineProperty(canvasMock, 'height', { value: 2000 });
+	beforeEach(async () => {
+		await TestBed.configureTestingModule({
+			declarations: [AgreementsComponent],
+			imports: [HttpClientTestingModule],
+			providers: [AccountSettingsService, UserprofileService]
+		}).compileComponents();
 
-	const mockToDataURL = jasmine.createSpy().and.returnValue('data:image/png;base64,mockimage');
-	canvasMock.toDataURL = mockToDataURL;
+		fixture = TestBed.createComponent(AgreementsComponent);
+		component = fixture.componentInstance;
+		httpClientSpy = TestBed.inject<any>(HttpClientTestingModule);
+		fixture.detectChanges();
+	});
 
-	const html2canvasSpy = spyOn(html2canvasModule.default, 'default').and.returnValue(Promise.resolve(canvasMock));
+	it('should generate and download PDF for privacy', async () => {
+		const mockHtml = '<div>{{policyContent}}</div><div>{{contentHeading}}</div>';
 
-	const saveSpy = jasmine.createSpy();
-	const addImageSpy = jasmine.createSpy();
-	const addPageSpy = jasmine.createSpy();
+		const mockCanvas = document.createElement('canvas');
+		Object.defineProperty(mockCanvas, 'width', { value: 800 });
+		Object.defineProperty(mockCanvas, 'height', { value: 1000 });
+		mockCanvas.getContext('2d'); // ensure it's valid
 
-	spyOn<any>(jsPDF.prototype, 'addImage').and.callFake(addImageSpy);
-	spyOn<any>(jsPDF.prototype, 'addPage').and.callFake(addPageSpy);
-	spyOn<any>(jsPDF.prototype, 'save').and.callFake(saveSpy);
+		// Mock get for HTML template
+		spyOn(component['http'], 'get').and.returnValue(of(mockHtml));
 
-	component.privacyData = ['Mock Privacy Content'];
-	component.termsData = ['Mock Terms Content'];
-	component.contentPagelabels = mockContentPageLabels;
+		// Mock html2canvas
+		const html2canvasSpy = jasmine.createSpy().and.returnValue(Promise.resolve(mockCanvas));
+		(html2canvas as any).default = html2canvasSpy;
 
-	await component.downloadPdf('privacy');
+		// Mock jsPDF instance
+		const addImageSpy = jasmine.createSpy('addImage');
+		const addPageSpy = jasmine.createSpy('addPage');
+		const saveSpy = jasmine.createSpy('save');
+		const internalMock = {
+			pageSize: {
+				getWidth: () => 210,
+				getHeight: () => 297
+			}
+		};
 
-	expect(spyHttpGet).toHaveBeenCalledWith('assets/templates/aggrement.html', { responseType: 'text' });
-	expect(html2canvasSpy).toHaveBeenCalled();
-	expect(addImageSpy).toHaveBeenCalled();
-	expect(saveSpy).toHaveBeenCalledWith('PrivacyPolicy.pdf');
+		spyOn(jsPDF.prototype, 'addImage').and.callFake(addImageSpy);
+		spyOn(jsPDF.prototype, 'addPage').and.callFake(addPageSpy);
+		spyOn(jsPDF.prototype, 'save').and.callFake(saveSpy);
+		spyOnProperty(jsPDF.prototype, 'internal', 'get').and.returnValue(internalMock);
+
+		// Mock data
+		component.privacyData = ['Mock Privacy Content'];
+		component.termsData = ['Mock Terms Content'];
+		component.contentPagelabels = {
+			privacy: { heading: 'Mock Privacy Heading' },
+			terms: { heading: 'Mock Terms Heading' }
+		};
+
+		await component.downloadPdf('privacy');
+
+		expect(component['http'].get).toHaveBeenCalledWith('assets/templates/aggrement.html', { responseType: 'text' });
+		expect(html2canvasSpy).toHaveBeenCalled();
+		expect(addImageSpy).toHaveBeenCalled();
+		expect(saveSpy).toHaveBeenCalledWith('PrivacyPolicy.pdf');
+	});
 });

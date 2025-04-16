@@ -1,328 +1,352 @@
-yy<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Assignment_01</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <h1>User Form</h1>
-  <form id="userForm">
-    <div class="form-group">
-      <label for="name">Name:</label>
-      <input type="text" id="name" name="name">
-      <span id="nameError" class="error"></span>
-    </div>
+import { Component, Inject, Input, OnInit } from '@angular/core';
+import { AccountSettingsService } from '../../../account-settings.service';
+import { AgreementsSection, UserProfileDetails } from '../../../definitions/account-settings.interface';
+import { UserprofileService } from '../../../userprofile/userprofile.service';
+import { HttpClient } from '@angular/common/http';
+import { ApiResponse } from 'projects/tmhna-portal/src/app/definitions/api-response.interface';
+import { AemLabelsPolicy, AemLabelsTnC } from '../../../../shell/shell.interface';
+import { ContentPageText } from 'projects/tmhna-portal/src/app/raymond/components/raymondContentPages/definitions/content.page.interface';
+import { expEnvironmentRef } from 'projects/tmhna-portal/src/app/injection-tokens/environment.injection-token';
+import { EnvironmentRef } from 'projects/tmhna-portal/src/environments/interfaces/environment.interface';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
-    <div class="form-group">
-      <label for="age">Age:</label>
-      <input type="number" id="age" name="age">
-      <span id="ageError" class="error"></span>
-    </div>
+@Component({
+	selector: 'tmhna-portal-agreements',
+	templateUrl: './agreements.component.html',
+	styleUrls: ['./agreements.component.scss']
+})
+export class AgreementsComponent implements OnInit
+{
+	@Input() state!: AgreementsSection;
+	@Input() set stateData(value: UserProfileDetails)
+	{
+	   this.service.updateState(value);
+	}
+	get stateData(): UserProfileDetails
+	{
+		return this.service.state;
+	}
+	 privacyData: string[] = [];
+	 termsData: string[] = [];
+	 contentPagelabels: ContentPageText = {
+		 privacy: {
+			 heading: ''
+		 },
+		 terms: {
+			 heading: ''
+		 }
+	 };
+	 constructor(@Inject(expEnvironmentRef) readonly environmentRef: EnvironmentRef, public service: UserprofileService, public accountSettingsService: AccountSettingsService, private http: HttpClient)
+	 {
+	 }
 
-    <div class="form-group">
-      <label for="gender">Gender:</label>
-      <select id="gender" name="gender">
-        <option value="">Select</option>
-        <option value="male">Male</option>
-        <option value="female">Female</option>
-        <option value="other">Other</option>
-      </select>
-      <span id="genderError" class="error"></span>
-    </div>
+	 ngOnInit(): void
+	 {
+	 	this.getContentPageLabels();
+	 	this.getPrivacyData();
+	 	this.getTermsData();
+	 }
+	 ;
+	 openTc()
+	 {
+	 	this.accountSettingsService.termsAndConditionState.hidden=false;
+	 }
+	 openPp()
+	 {
+	 	this.accountSettingsService.policyState.hidden=false;
+	 }
 
-    <div class="form-group">
-      <label for="address">Address:</label>
-      <input type="text" id="address" name="address">
-      <span id="addressError" class="error"></span>
-    </div>
+	 getPrivacyData()
+	  {
+	 	this.accountSettingsService.getPrivacyPolicyData().subscribe({
+	 		next: (res) =>
+	 		{
+	 			if(res)
+	 			{
+				  const data = <AemLabelsPolicy>res.data;
+				  this.privacyData = data.updatedPrivacy.content;
+	 			}
+	 		},
+	 		error: () =>
+	 		{
+	 		}
+	 	});
+	  }
 
-    <div class="form-group">
-      <label for="city">City:</label>
-      <input type="text" id="city" name="city">
-      <span id="cityError" class="error"></span>
-    </div>
+	  getTermsData()
+	  {
+	 	this.accountSettingsService.getTermsAndConditionsData().subscribe({
+	 		next: (res: ApiResponse) =>
+	 		{
+	 			if(res.data && res.data)
+	 			{
+	 				const data = <AemLabelsTnC>res.data;
+	 				this.termsData = data.updatedTerms.content;
+	 			}
+	 		},
+	 		error: () =>
+	 		{
+	 		}
+	 	});
+	  }
 
-    <div class="form-group">
-      <label for="state">State:</label>
-      <input type="text" id="state" name="state">
-      <span id="stateError" class="error"></span>
-    </div>
+	  getContentPageLabels()
+	  {
+		  this.accountSettingsService.getContentPageData().subscribe({
+			  next: (res) =>
+			  {
+				  if(res)
+				  {
+					  this.contentPagelabels = res;
+				  }
+			  },
+			  error: () =>
+			  {
+			  }
+		  });
+	  }
 
-    <div class="form-group">
-      <label for="country">Country:</label>
-      <input type="text" id="country" name="country">
-      <span id="countryError" class="error"></span>
-    </div>
+	 handleDownloadPrivacyPolicyClick()
+	 {
+	 	this.downloadPdf('privacy');
+	  }
 
-    <div class="form-group">
-      <label for="phone">Phone Number:</label>
-      <input type="text" id="phone" name="phone">
-      <span id="phoneError" class="error"></span>
-    </div>
+	  handleDownloadTermsAndConditionsClick()
+	 {
+	 	this.downloadPdf('terms');
+	 }
 
-    <button type="submit">Submit</button>
-  </form>
-  <script src="script.js"></script>
-</body>
-</html>
+	 downloadPdf(agreement: string): void
+	 {
+	 	this.http.get('assets/templates/aggrement.html', { responseType: 'text' }).subscribe(async (htmlTemplate: string) =>
+	 	{
+		  const dynamicHtml = htmlTemplate
+	 			.replace('{{policyContent}}', agreement === 'privacy' ? this.privacyData[0] : this.termsData[0])
+	 			.replace('{{contentHeading}}', agreement === 'privacy' ? this.contentPagelabels.privacy.heading : this.contentPagelabels.terms.heading);
 
+		  const dynamicElement = document.createElement('div');
+		  dynamicElement.id = 'dynamic-pdf-content';
+		  dynamicElement.innerHTML = dynamicHtml;
+		  document.body.appendChild(dynamicElement);
 
-body {
-  font-family: Arial, sans-serif;
-  margin: 20px;
+		  html2canvas(dynamicElement, { useCORS: true, scale: 2 }).then(canvas =>
+	 		{
+	 			const imgData = canvas.toDataURL('image/png');
+	 			const pdf = new jsPDF('p', 'mm', 'a4');
+	 			const pdfWidth = pdf.internal.pageSize.getWidth();
+	 			const pdfHeight = pdf.internal.pageSize.getHeight();
+	 			const canvasWidth = canvas.width;
+	 			const canvasHeight = canvas.height;
+	 			const imgHeight = (canvasHeight * pdfWidth) / canvasWidth;
+	 			if (imgHeight <= pdfHeight)
+	 			{
+			  pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+	 			}
+	 			else
+	 			{
+			  let heightLeft = imgHeight;
+			  let position = 0;
+			  while (heightLeft > 0)
+	 				{
+	 					pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight > pdfHeight ? pdfHeight : imgHeight);
+	 					heightLeft -= pdfHeight;
+	 					if (heightLeft > 0)
+	 					{
+				  position -= pdfHeight;
+				  pdf.addPage();
+	 					}
+			  }
+	 			}
+
+	 			pdf.save(agreement === 'privacy' ? 'PrivacyPolicy.pdf' : 'TermsPolicy.pdf');
+	 			document.body.removeChild(dynamicElement);
+		  });
+	 	});
+	  }
 }
 
-h1 {
-  color: #333;
-}
 
-.form-group {
-  display: flex;
-  align-items: center; /* Aligns all items within the box at the same level */
-  border: 1px solid #ccc;
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 5px;
-  background-color: #f9f9f9;
-}
+import { DatePipe } from '@angular/common';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { BrowserModule } from '@angular/platform-browser';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { RouterTestingModule } from '@angular/router/testing';
+import { KngToasterModule } from 'kinetic-angular';
+import { LoggerModule, NgxLoggerLevel } from 'ngx-logger';
+import { FakeApiService } from '../../../../../constants/account-settings-data';
+import { mockAuthAddLocationService } from '../../../../../constants/add-new-location-data';
+import { ApiService } from '../../../../../services/api/api.service';
+import { AuthenticationService } from '../../../../../services/authentication/authentication.service';
+import { LoggerServiceModule } from '../../../../../services/logger/logger.module';
+import { LoggerService } from '../../../../../services/logger/logger.service';
+import { AccountSettingsService } from '../../../account-settings.service';
+import { AgreementsSection, UserProfileDetails } from '../../../definitions/account-settings.interface';
+import { UserProfileFactory } from '../../../userprofile/userprofile.factory';
+import { UserprofileService } from '../../../userprofile/userprofile.service';
 
-label {
-  width: 150px; /* Ensures all labels align */
-  font-weight: bold;
-}
+import { AgreementsComponent } from './agreements.component';
+import { of } from 'rxjs';
+import { ApiResponse } from 'projects/tmhna-portal/src/app/definitions/api-response.interface';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
-input, select {
-  flex: 1; /* Ensures inputs expand to fill available space */
-  padding: 8px;
-}
+fdescribe('AgreementsComponent', () => 
+{
+	let component: AgreementsComponent;
+	let fixture: ComponentFixture<AgreementsComponent>;
+	let accountSettingsService: AccountSettingsService;
+	let httpClient: HttpClient;
 
-.error {
-  color: red;
-  font-size: 0.9em;
-  margin-left: 10px;
-}
+	const mockState: AgreementsSection = {
+		heading: 'Agreements',
+		name: 'Name',
+		signedDate: 'Signed Date',
+		tcLable: 'Terms and Conditions',
+		privacyPolicy: 'Privacy Policy',
+		termConditions: '',
+		modalData: '',
+		modalDetails: '',
+		logo: '',
+		requestedRole: '',
+		tokenData: ''
 
-button {
-  background-color: #4CAF50;
-  color: white;
-  padding: 10px 15px;
-  border: none;
-  cursor: pointer;
-  display: block;
-  margin-top: 10px;
-}
+	};
+	const mockContentPageLabels = {
+		privacy: { heading: 'Privacy Policy' },
+		terms: { heading: 'Terms and Conditions' }
+	};
+	const mockStateData = UserProfileFactory.build();
+	const apiServiceMock: FakeApiService = new FakeApiService();
 
-button:hover {
-  background-color: #45a049;
-}
+	beforeEach(async () => 
+	{
+		await TestBed.configureTestingModule({
+			declarations: [AgreementsComponent],
+			imports: [
+				HttpClientModule,
+				HttpClientTestingModule,
+				RouterTestingModule,
+				BrowserModule,
+				ReactiveFormsModule,
+				BrowserAnimationsModule,
+				LoggerServiceModule,
+				FormsModule,
+				KngToasterModule,
+				LoggerModule.forRoot({
+					level: NgxLoggerLevel.DEBUG
+				})
 
-import React, { useState } from 'react';
-import './styles.css';
+			],
+			providers: [
+				{ provide: ApiService, useValue: apiServiceMock },
+				AccountSettingsService, UserprofileService, LoggerService, DatePipe,
+				{ provide: AuthenticationService, useValue: mockAuthAddLocationService }
+			]	
+		})
+			.compileComponents();
+	});
 
-const App = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    age: '',
-    gender: '',
-    address: '',
-    city: '',
-    state: '',
-    country: '',
-    phone: '',
-  });
+	beforeEach(() => 
+	{
+		fixture = TestBed.createComponent(AgreementsComponent);
+		accountSettingsService = TestBed.inject(AccountSettingsService);
+		component = fixture.componentInstance;
+		component.state=mockState;
+		fixture.detectChanges();
+		httpClient = TestBed.inject(HttpClient);
+	});
+	it('should create', () => 
+	{
+		expect(component).toBeTruthy();
+	});
+	it('should call state', () => 
+	{
+		component.state = mockState;
+		expect(component.state).toEqual(mockState);
+	});
 
-  const [errors, setErrors] = useState({});
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-    for (const field in formData) {
-      if (!formData[field].trim()) {
-        newErrors[field] = `${field.charAt(0).toUpperCase() + field.slice(1)} is required`;
-      }
-    }
-    return newErrors;
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const validationErrors = validateForm();
-    setErrors(validationErrors);
-
-    if (Object.keys(validationErrors).length === 0) {
-      alert('Form submitted successfully!');
-      setFormData({
-        name: '',
-        age: '',
-        gender: '',
-        address: '',
-        city: '',
-        state: '',
-        country: '',
-        phone: '',
-      });
-      setErrors({});
-    }
-  };
-
-  return (
-    <div className="form-container">
-      <h1>User Form</h1>
-      <form onSubmit={handleSubmit}>
-        {[
-          { label: 'Name', name: 'name', type: 'text' },
-          { label: 'Age', name: 'age', type: 'number' },
-          {
-            label: 'Gender',
-            name: 'gender',
-            type: 'select',
-            options: ['Male', 'Female', 'Other'],
-          },
-          { label: 'Address', name: 'address', type: 'text' },
-          { label: 'City', name: 'city', type: 'text' },
-          { label: 'State', name: 'state', type: 'text' },
-          { label: 'Country', name: 'country', type: 'text' },
-          { label: 'Phone', name: 'phone', type: 'number' },
-        ].map(({ label, name, type, options }) => (
-          <div className="form-group" key={name}>
-            <label htmlFor={name}>{label}:</label>
-            {type === 'select' ? (
-              <select
-                id={name}
-                name={name}
-                value={formData[name]}
-                onChange={handleChange}
-              >
-                <option value="">Select</option>
-                {options.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                id={name}
-                name={name}
-                type={type}
-                value={formData[name]}
-                onChange={handleChange}
-              />
-            )}
-            {errors[name] && <span className="error">{errors[name]}</span>}
-          </div>
-        ))}
-        <button type="submit">Submit</button>
-      </form>
-    </div>
-  );
-};
-
-export default App;
-
-import React, { useState } from 'react';
-
-function App() {
-  const [formData, setFormData] = useState({
-    name: '',
-    age: '',
-    gender: '',
-    address: '',
-    city: '',
-    state: '',
-    country: '',
-    phone: '',
-  });
-
-  const [errors, setErrors] = useState({});
-
-  const validateForm = () => {
-    const newErrors = {};
-    if (!formData.name) newErrors.name = 'Name is required';
-    if (!formData.age) newErrors.age = 'Age is required';
-    if (!formData.gender) newErrors.gender = 'Gender is required';
-    if (!formData.address) newErrors.address = 'Address is required';
-    if (!formData.city) newErrors.city = 'City is required';
-    if (!formData.state) newErrors.state = 'State is required';
-    if (!formData.country) newErrors.country = 'Country is required';
-    if (!formData.phone) newErrors.phone = 'Phone number is required';
-
-    return newErrors;
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const validationErrors = validateForm();
-    setErrors(validationErrors);
-
-    if (Object.keys(validationErrors).length === 0) {
-      alert('Form submitted successfully!');
-      setFormData({
-        name: '',
-        age: '',
-        gender: '',
-        address: '',
-        city: '',
-        state: '',
-        country: '',
-        phone: '',
-      });
-    }
-  };
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  return (
-    <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
-      <form onSubmit={handleSubmit} style={{ width: '300px', border: '1px solid #ccc', padding: '20px', borderRadius: '8px' }}>
-        <h2>Form</h2>
-        {Object.keys(formData).map((key) => (
-          <div key={key} style={{ marginBottom: '10px' }}>
-            <label>
-              {key.charAt(0).toUpperCase() + key.slice(1)}:
-              <input
-                type={key === 'age' || key === 'phone' ? 'number' : 'text'}
-                name={key}
-                value={formData[key]}
-                onChange={handleChange}
-                style={{ display: 'block', width: '100%', padding: '5px', marginTop: '5px' }}
-              />
-            </label>
-            {errors[key] && <p style={{ color: 'red', fontSize: '12px' }}>{errors[key]}</p>}
-          </div>
-        ))}
-        <div>
-          <label>
-            Gender:
-            <select
-              name="gender"
-              value={formData.gender}
-              onChange={handleChange}
-              style={{ display: 'block', width: '100%', padding: '5px', marginTop: '5px' }}
-            >
-              <option value="">Select Gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </select>
-          </label>
-          {errors.gender && <p style={{ color: 'red', fontSize: '12px' }}>{errors.gender}</p>}
-        </div>
-        <button type="submit" style={{ marginTop: '20px', padding: '10px', width: '100%' }}>Submit</button>
-      </form>
-    </div>
-  );
-}
-
-export default App;
+	it('should get state', () =>
+	{
+		const value: UserProfileDetails = mockStateData;
+		const setState = component.stateData;
+		component.stateData = value;
+		expect(setState).toBeTruthy();
+	});
+	it('should call openTc', ()=> 
+	{
+		spyOn(component, 'openTc').and.callThrough();
+		component.openTc();
+		expect(component.openTc).toHaveBeenCalled();
+	});
+	it('should call openPp', ()=> 
+	{
+		spyOn(component, 'openPp').and.callThrough();
+		component.openPp();
+		expect(component.openPp).toHaveBeenCalled();
+	});
+	it('should call getPrivacyData and set privacyData', () => 
+	{
+		const mockResponse: ApiResponse = {
+			success: true,
+			message: 'Success',
+			statusCode: 200,
+			data: {
+			  updatedPrivacy: {
+					content: 'Mock Privacy Policy Content'
+			  }
+			}
+		  };
+		spyOn(accountSettingsService, 'getPrivacyPolicyData').and.returnValue(of(mockResponse));
+		component.getPrivacyData();
+		expect(accountSettingsService.getPrivacyPolicyData).toHaveBeenCalled();
+		expect(component.privacyData).toEqual('Mock Privacy Policy Content');
+	  });
+	it('should call getTermsData and set TermsData', () => 
+	{
+		const mockResponse: ApiResponse = {
+			success: true,
+			message: 'Success',
+			statusCode: 200,
+			data: {
+				updatedTerms: {
+					content: 'Mock Terms and Condition Content'
+				  }
+			}
+			  };
+		spyOn(accountSettingsService, 'getTermsAndConditionsData').and.returnValue(of(mockResponse));
+		component.getTermsData();
+		expect(accountSettingsService.getTermsAndConditionsData).toHaveBeenCalled();
+		expect(component.termsData).toEqual('Mock Terms and Condition Content');
+	});
+	it('should call getContentPageLabels and set contentPagelabels', () => 
+	{
+		spyOn(accountSettingsService, 'getContentPageData').and.returnValue(of(mockContentPageLabels));
+		component.getContentPageLabels();
+		expect(accountSettingsService.getContentPageData).toHaveBeenCalled();
+		expect(component.contentPagelabels).toEqual(mockContentPageLabels);
+	  });
+	  it('should call handleDownloadPrivacyPolicyClick and downloadPdf with privacy', () => 
+	{
+		spyOn(component, 'downloadPdf');
+		component.handleDownloadPrivacyPolicyClick();
+		expect(component.downloadPdf).toHaveBeenCalledWith('privacy');
+	  });
+	
+	  it('should call handleDownloadTermsAndConditionsClick and downloadPdf with terms', () => 
+	{
+		spyOn(component, 'downloadPdf');
+		component.handleDownloadTermsAndConditionsClick();
+		expect(component.downloadPdf).toHaveBeenCalledWith('terms');
+	  });
+	
+	  it('should call handleDownloadTermsAndConditionsClick and downloadPdf with terms', () => 
+	{
+		spyOn(component, 'downloadPdf');
+		component.handleDownloadTermsAndConditionsClick();
+		expect(component.downloadPdf).toHaveBeenCalledWith('terms');
+	  });
+});

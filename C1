@@ -1,265 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import { delItem } from '../redux/actions/index';
-import { NavLink } from 'react-router-dom';
+import * as html2canvasModule from 'html2canvas';
 
-const Cart = () => {
-    const [cartItems, setCartItems] = useState([]); // State to hold cart items
-    const dispatch = useDispatch();
+it('should generate and download a PDF for privacy policy', async () =>
+{
+	const mockHtml = '<div>{{policyContent}}</div><div>{{contentHeading}}</div>';
+	const spyHttpGet = spyOn(httpClient, 'get').and.returnValue(of(mockHtml));
 
-    // Fetch cart items from local storage on component mount
-    useEffect(() => {
-        const storedCart = JSON.parse(localStorage.getItem('cartItems')) || [];
-        setCartItems(storedCart);
-    }, []);
+	const canvasMock = document.createElement('canvas');
+	Object.defineProperty(canvasMock, 'width', { value: 1000 });
+	Object.defineProperty(canvasMock, 'height', { value: 2000 });
 
-    // Handle removing an item from the cart
-    const handleClose = (item) => {
-        const updatedCart = cartItems.filter((cartItem) => cartItem.id !== item.id);
-        setCartItems(updatedCart);
-        localStorage.setItem('cartItems', JSON.stringify(updatedCart)); // Update local storage
-        dispatch(delItem(item)); // Dispatch Redux action for consistency
-    };
+	const mockToDataURL = jasmine.createSpy().and.returnValue('data:image/png;base64,mockimage');
+	canvasMock.toDataURL = mockToDataURL;
 
-    // Render a single cart item
-    const renderCartItems = (cartItem) => {
-        return (
-            <div className="px-4 my-5 bg-light rounded-3" key={cartItem.id}>
-                <div className="container py-4">
-                    <button
-                        onClick={() => handleClose(cartItem)}
-                        className="btn-close float-end"
-                        aria-label="Close"
-                    ></button>
-                    <div className="row justify-content-center">
-                        <div className="col-md-4">
-                            <img
-                                src={cartItem.img}
-                                alt={cartItem.title}
-                                height="200px"
-                                width="180px"
-                            />
-                        </div>
-                        <div className="col-md-4">
-                            <h3>{cartItem.title}</h3>
-                            <p className="lead fw-bold">${cartItem.price}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    };
+	const html2canvasSpy = spyOn(html2canvasModule.default, 'default').and.returnValue(Promise.resolve(canvasMock));
 
-    // Render empty cart message
-    const emptyCart = () => {
-        return (
-            <div className="px-4 my-5 bg-light rounded-3 py-5">
-                <div className="container py-4">
-                    <div className="row">
-                        <h3>Your Cart is Empty</h3>
-                    </div>
-                </div>
-            </div>
-        );
-    };
+	const saveSpy = jasmine.createSpy();
+	const addImageSpy = jasmine.createSpy();
+	const addPageSpy = jasmine.createSpy();
 
-    // Render "Proceed to Checkout" button
-    const checkoutButton = () => {
-        return (
-            <div className="container">
-                <div className="row">
-                    <NavLink
-                        to="/checkout"
-                        className="btn btn-outline-primary mb-5 w-25 mx-auto"
-                    >
-                        Proceed To Checkout
-                    </NavLink>
-                </div>
-            </div>
-        );
-    };
+	spyOn<any>(jsPDF.prototype, 'addImage').and.callFake(addImageSpy);
+	spyOn<any>(jsPDF.prototype, 'addPage').and.callFake(addPageSpy);
+	spyOn<any>(jsPDF.prototype, 'save').and.callFake(saveSpy);
 
-    return (
-        <>
-            {cartItems.length === 0 && emptyCart()}
-            {cartItems.length !== 0 && cartItems.map(renderCartItems)}
-            {cartItems.length !== 0 && checkoutButton()}
-        </>
-    );
-};
+	component.privacyData = ['Mock Privacy Content'];
+	component.termsData = ['Mock Terms Content'];
+	component.contentPagelabels = mockContentPageLabels;
 
-export default Cart;
+	await component.downloadPdf('privacy');
 
-
-
-
-import { useSelector } from 'react-redux';
-
-const ProductDetail = () => {
-    const [cartBtn, setCartBtn] = useState("Add to Cart");
-    const state = useSelector((state) => state.addItem); // Get cart state from Redux
-    const proid = useParams();
-    const proDetail = DATA.filter((x) => x.id == proid.id);
-    const product = proDetail[0];
-    const dispatch = useDispatch();
-
-    // Set button state based on cart contents
-    React.useEffect(() => {
-        const existsInCart = state.find((item) => item.id === product.id);
-        if (existsInCart) {
-            setCartBtn("Remove from Cart");
-        }
-    }, [state, product]);
-
-    const handleCart = (product) => {
-        if (cartBtn === "Add to Cart") {
-            dispatch(addItem(product));
-            setCartBtn("Remove from Cart");
-        } else {
-            dispatch(delItem(product));
-            setCartBtn("Add to Cart");
-        }
-    };
-
-    return (
-        <div className="container my-5 py-3">
-            <div className="row">
-                <div className="col-md-6 d-flex justify-content-center mx-auto product">
-                    <img src={product.img} alt={product.title} height="400px" />
-                </div>
-                <div className="col-md-6 d-flex flex-column justify-content-center">
-                    <h1 className="display-5 fw-bold">{product.title}</h1>
-                    <hr />
-                    <h2 className="my-4">${product.price}</h2>
-                    <p className="lead">{product.desc}</p>
-                    <button onClick={() => handleCart(product)} className="btn btn-outline-primary my-5">
-                        {cartBtn}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-
-import React, { useState } from "react";
-
-const Login = () => {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
-
-    const handleLogin = async (e) => {
-        e.preventDefault();
-
-        // Fetch users data
-        const response = await fetch("/users.json");
-        const users = await response.json();
-
-        // Check if user exists
-        const user = users.find(
-            (u) => u.email === email && u.password === password
-        );
-
-        if (user) {
-            // Store session in localStorage
-            localStorage.setItem("isLoggedIn", "true");
-            localStorage.setItem("userEmail", email);
-            setError("");
-            alert("Login successful!");
-            window.location.reload(); // Reload the page after login
-        } else {
-            setError("Invalid credentials or user not registered.");
-        }
-    };
-
-    return (
-        <>
-            <button
-                type="button"
-                className="btn btn-outline-primary ms-auto"
-                data-bs-toggle="modal"
-                data-bs-target="#loginModal"
-            >
-                <span className="fa fa-sign-in me-1"></span> Login
-            </button>
-
-            <div
-                className="modal fade"
-                id="loginModal"
-                tabIndex="-1"
-                aria-labelledby="exampleModalLabel"
-                aria-hidden="true"
-            >
-                <div className="modal-dialog">
-                    <div className="modal-content">
-                        <div className="modal-header">
-                            <h5 className="modal-title" id="exampleModalLabel">
-                                Login
-                            </h5>
-                            <button
-                                type="button"
-                                className="btn-close"
-                                data-bs-dismiss="modal"
-                                aria-label="Close"
-                            ></button>
-                        </div>
-                        <div className="modal-body">
-                            <form onSubmit={handleLogin}>
-                                <div className="mb-3">
-                                    <label
-                                        htmlFor="exampleInputEmail1"
-                                        className="form-label"
-                                    >
-                                        Email address
-                                    </label>
-                                    <input
-                                        type="email"
-                                        className="form-control"
-                                        id="exampleInputEmail1"
-                                        value={email}
-                                        onChange={(e) =>
-                                            setEmail(e.target.value)
-                                        }
-                                        required
-                                    />
-                                </div>
-                                <div className="mb-3">
-                                    <label
-                                        htmlFor="exampleInputPassword1"
-                                        className="form-label"
-                                    >
-                                        Password
-                                    </label>
-                                    <input
-                                        type="password"
-                                        className="form-control"
-                                        id="exampleInputPassword1"
-                                        value={password}
-                                        onChange={(e) =>
-                                            setPassword(e.target.value)
-                                        }
-                                        required
-                                    />
-                                </div>
-                                {error && (
-                                    <div className="text-danger mb-3">
-                                        {error}
-                                    </div>
-                                )}
-                                <button
-                                    type="submit"
-                                    className="btn btn-outline-primary w-100 mt-3"
-                                >
-                                    Submit
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </>
-    );
-};
-
-export default Login;
+	expect(spyHttpGet).toHaveBeenCalledWith('assets/templates/aggrement.html', { responseType: 'text' });
+	expect(html2canvasSpy).toHaveBeenCalled();
+	expect(addImageSpy).toHaveBeenCalled();
+	expect(saveSpy).toHaveBeenCalledWith('PrivacyPolicy.pdf');
+});

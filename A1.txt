@@ -1,352 +1,110 @@
-import { Component, Inject, Input, OnInit } from '@angular/core';
-import { AccountSettingsService } from '../../../account-settings.service';
-import { AgreementsSection, UserProfileDetails } from '../../../definitions/account-settings.interface';
-import { UserprofileService } from '../../../userprofile/userprofile.service';
-import { HttpClient } from '@angular/common/http';
-import { ApiResponse } from 'projects/tmhna-portal/src/app/definitions/api-response.interface';
-import { AemLabelsPolicy, AemLabelsTnC } from '../../../../shell/shell.interface';
-import { ContentPageText } from 'projects/tmhna-portal/src/app/raymond/components/raymondContentPages/definitions/content.page.interface';
-import { expEnvironmentRef } from 'projects/tmhna-portal/src/app/injection-tokens/environment.injection-token';
-import { EnvironmentRef } from 'projects/tmhna-portal/src/environments/interfaces/environment.interface';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+<div class="main-container">
+  <div class="widget-container row">
+    <div class="col-12 col-md-6">
+      <div class="widget-items-row">
+        <div class="widget-item mb-4 remove-duplicate-box-shadow-border">
+          <kng-item-card [state]="averageFirstTimeFixData" [isServiceView]="true"></kng-item-card>
+        </div>
+      </div>
+      <div class="widget-items-row">
+        <div class="widget-item mb-4 mb-md-0 remove-duplicate-box-shadow-border">
+          <kng-item-card [state]="averageSameDayFixData" [isServiceView]="true"></kng-item-card>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6">
+      <div class="dispatch-status-widget">
+        <tmhna-portal-dispatch-status-widget [payload]="payload"></tmhna-portal-dispatch-status-widget>
+      </div>
+    </div>
+  </div>
 
-@Component({
-	selector: 'tmhna-portal-agreements',
-	templateUrl: './agreements.component.html',
-	styleUrls: ['./agreements.component.scss']
-})
-export class AgreementsComponent implements OnInit
-{
-	@Input() state!: AgreementsSection;
-	@Input() set stateData(value: UserProfileDetails)
-	{
-	   this.service.updateState(value);
-	}
-	get stateData(): UserProfileDetails
-	{
-		return this.service.state;
-	}
-	 privacyData: string[] = [];
-	 termsData: string[] = [];
-	 contentPagelabels: ContentPageText = {
-		 privacy: {
-			 heading: ''
-		 },
-		 terms: {
-			 heading: ''
-		 }
-	 };
-	 constructor(@Inject(expEnvironmentRef) readonly environmentRef: EnvironmentRef, public service: UserprofileService, public accountSettingsService: AccountSettingsService, private http: HttpClient)
-	 {
-	 }
+  <!-- Average Response and Resolution Time widgets -->
+  <div class="widget-row d-md-flex gap-4">
+    <div class="avgResponseTime-widget w-100 w-md-50 mb-4 m-md-0">
+      <tmhna-portal-avg-response-time-widget widgetType="ResponseTime"
+        [payload]="payload"></tmhna-portal-avg-response-time-widget>
+    </div>
+    <div class="avgResolutionTime-widget w-100 w-md-50">
+      <tmhna-portal-avg-response-time-widget widgetType="ResolutionTime"
+        [payload]="payload"></tmhna-portal-avg-response-time-widget>
+    </div>
+  </div>
 
-	 ngOnInit(): void
-	 {
-	 	this.getContentPageLabels();
-	 	this.getPrivacyData();
-	 	this.getTermsData();
-	 }
-	 ;
-	 openTc()
-	 {
-	 	this.accountSettingsService.termsAndConditionState.hidden=false;
-	 }
-	 openPp()
-	 {
-	 	this.accountSettingsService.policyState.hidden=false;
-	 }
+  <div class="widget-row" *ngIf="isDataLoaded">
+    <div class="schedulemainteaince-widget--accordion">
+      <tmhna-portal-schedulemaintenance-widgets [scheduleMaintenanceServiceData]='scheduleMaintenanceServiceData'
+        [scheduleMaintenanceLabel]='labels' [showPageLoader]='showPageLoader' [isDataLoaded]="isDataLoaded">
+      </tmhna-portal-schedulemaintenance-widgets>
+    </div>
+  </div>
+</div>
 
-	 getPrivacyData()
-	  {
-	 	this.accountSettingsService.getPrivacyPolicyData().subscribe({
-	 		next: (res) =>
-	 		{
-	 			if(res)
-	 			{
-				  const data = <AemLabelsPolicy>res.data;
-				  this.privacyData = data.updatedPrivacy.content;
-	 			}
-	 		},
-	 		error: () =>
-	 		{
-	 		}
-	 	});
-	  }
+@use '../../../../../styles/color-palette.scss';
+@use '../../../../../styles/breakpoints.scss';
+.main-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 32px;
 
-	  getTermsData()
-	  {
-	 	this.accountSettingsService.getTermsAndConditionsData().subscribe({
-	 		next: (res: ApiResponse) =>
-	 		{
-	 			if(res.data && res.data)
-	 			{
-	 				const data = <AemLabelsTnC>res.data;
-	 				this.termsData = data.updatedTerms.content;
-	 			}
-	 		},
-	 		error: () =>
-	 		{
-	 		}
-	 	});
-	  }
 
-	  getContentPageLabels()
-	  {
-		  this.accountSettingsService.getContentPageData().subscribe({
-			  next: (res) =>
-			  {
-				  if(res)
-				  {
-					  this.contentPagelabels = res;
-				  }
-			  },
-			  error: () =>
-			  {
-			  }
-		  });
-	  }
-
-	 handleDownloadPrivacyPolicyClick()
-	 {
-	 	this.downloadPdf('privacy');
-	  }
-
-	  handleDownloadTermsAndConditionsClick()
-	 {
-	 	this.downloadPdf('terms');
-	 }
-
-	 downloadPdf(agreement: string): void
-	 {
-	 	this.http.get('assets/templates/aggrement.html', { responseType: 'text' }).subscribe(async (htmlTemplate: string) =>
-	 	{
-		  const dynamicHtml = htmlTemplate
-	 			.replace('{{policyContent}}', agreement === 'privacy' ? this.privacyData[0] : this.termsData[0])
-	 			.replace('{{contentHeading}}', agreement === 'privacy' ? this.contentPagelabels.privacy.heading : this.contentPagelabels.terms.heading);
-
-		  const dynamicElement = document.createElement('div');
-		  dynamicElement.id = 'dynamic-pdf-content';
-		  dynamicElement.innerHTML = dynamicHtml;
-		  document.body.appendChild(dynamicElement);
-
-		  html2canvas(dynamicElement, { useCORS: true, scale: 2 }).then(canvas =>
-	 		{
-	 			const imgData = canvas.toDataURL('image/png');
-	 			const pdf = new jsPDF('p', 'mm', 'a4');
-	 			const pdfWidth = pdf.internal.pageSize.getWidth();
-	 			const pdfHeight = pdf.internal.pageSize.getHeight();
-	 			const canvasWidth = canvas.width;
-	 			const canvasHeight = canvas.height;
-	 			const imgHeight = (canvasHeight * pdfWidth) / canvasWidth;
-	 			if (imgHeight <= pdfHeight)
-	 			{
-			  pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
-	 			}
-	 			else
-	 			{
-			  let heightLeft = imgHeight;
-			  let position = 0;
-			  while (heightLeft > 0)
-	 				{
-	 					pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight > pdfHeight ? pdfHeight : imgHeight);
-	 					heightLeft -= pdfHeight;
-	 					if (heightLeft > 0)
-	 					{
-				  position -= pdfHeight;
-				  pdf.addPage();
-	 					}
-			  }
-	 			}
-
-	 			pdf.save(agreement === 'privacy' ? 'PrivacyPolicy.pdf' : 'TermsPolicy.pdf');
-	 			document.body.removeChild(dynamicElement);
-		  });
-	 	});
-	  }
+  .widget-items-row {
+    display: flex;
+    gap: 20px;
+    margin:0px;
+    justify-content: space-between;
+    height: fit-content;
+    flex-direction: column;
+    @include breakpoints.respond-to("md") {
+      flex-direction: row;
+    }
+  }
 }
 
 
-import { DatePipe } from '@angular/common';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { BrowserModule } from '@angular/platform-browser';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { RouterTestingModule } from '@angular/router/testing';
-import { KngToasterModule } from 'kinetic-angular';
-import { LoggerModule, NgxLoggerLevel } from 'ngx-logger';
-import { FakeApiService } from '../../../../../constants/account-settings-data';
-import { mockAuthAddLocationService } from '../../../../../constants/add-new-location-data';
-import { ApiService } from '../../../../../services/api/api.service';
-import { AuthenticationService } from '../../../../../services/authentication/authentication.service';
-import { LoggerServiceModule } from '../../../../../services/logger/logger.module';
-import { LoggerService } from '../../../../../services/logger/logger.service';
-import { AccountSettingsService } from '../../../account-settings.service';
-import { AgreementsSection, UserProfileDetails } from '../../../definitions/account-settings.interface';
-import { UserProfileFactory } from '../../../userprofile/userprofile.factory';
-import { UserprofileService } from '../../../userprofile/userprofile.service';
+ 
+.widget-item {
+  background-color: color-palette.$White;
+  border: 1px solid color-palette.$Gray-Cloud;
+  border-radius: 4px;
+  box-shadow: 0px 2px 20px 0px color-palette.$Gray-Dark;
+  height: inherit;
+  @include breakpoints.respond-to("md") {
+    width: 553px;
+    margin:0px;
+  }
+}
+ 
+ 
+ 
+ 
+.widget-item-notused {
+ 
+  background-color: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
 
-import { AgreementsComponent } from './agreements.component';
-import { of } from 'rxjs';
-import { ApiResponse } from 'projects/tmhna-portal/src/app/definitions/api-response.interface';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
-fdescribe('AgreementsComponent', () => 
-{
-	let component: AgreementsComponent;
-	let fixture: ComponentFixture<AgreementsComponent>;
-	let accountSettingsService: AccountSettingsService;
-	let httpClient: HttpClient;
 
-	const mockState: AgreementsSection = {
-		heading: 'Agreements',
-		name: 'Name',
-		signedDate: 'Signed Date',
-		tcLable: 'Terms and Conditions',
-		privacyPolicy: 'Privacy Policy',
-		termConditions: '',
-		modalData: '',
-		modalDetails: '',
-		logo: '',
-		requestedRole: '',
-		tokenData: ''
+.schedulemainteaince-widget--accordion {
+  border: 1px solid color-palette.$Light-Gray;
+    box-shadow: 0px 2px 20px 0px color-palette.$Card-Box-Shadow;
+  @include breakpoints.respond-to("md") {
+    overflow: hidden;
+    border-radius: 4px;
+    
+  }
 
-	};
-	const mockContentPageLabels = {
-		privacy: { heading: 'Privacy Policy' },
-		terms: { heading: 'Terms and Conditions' }
-	};
-	const mockStateData = UserProfileFactory.build();
-	const apiServiceMock: FakeApiService = new FakeApiService();
+}
 
-	beforeEach(async () => 
-	{
-		await TestBed.configureTestingModule({
-			declarations: [AgreementsComponent],
-			imports: [
-				HttpClientModule,
-				HttpClientTestingModule,
-				RouterTestingModule,
-				BrowserModule,
-				ReactiveFormsModule,
-				BrowserAnimationsModule,
-				LoggerServiceModule,
-				FormsModule,
-				KngToasterModule,
-				LoggerModule.forRoot({
-					level: NgxLoggerLevel.DEBUG
-				})
+.dispatch-status-widget {
+  height: 100%;
+}
 
-			],
-			providers: [
-				{ provide: ApiService, useValue: apiServiceMock },
-				AccountSettingsService, UserprofileService, LoggerService, DatePipe,
-				{ provide: AuthenticationService, useValue: mockAuthAddLocationService }
-			]	
-		})
-			.compileComponents();
-	});
-
-	beforeEach(() => 
-	{
-		fixture = TestBed.createComponent(AgreementsComponent);
-		accountSettingsService = TestBed.inject(AccountSettingsService);
-		component = fixture.componentInstance;
-		component.state=mockState;
-		fixture.detectChanges();
-		httpClient = TestBed.inject(HttpClient);
-	});
-	it('should create', () => 
-	{
-		expect(component).toBeTruthy();
-	});
-	it('should call state', () => 
-	{
-		component.state = mockState;
-		expect(component.state).toEqual(mockState);
-	});
-
-	it('should get state', () =>
-	{
-		const value: UserProfileDetails = mockStateData;
-		const setState = component.stateData;
-		component.stateData = value;
-		expect(setState).toBeTruthy();
-	});
-	it('should call openTc', ()=> 
-	{
-		spyOn(component, 'openTc').and.callThrough();
-		component.openTc();
-		expect(component.openTc).toHaveBeenCalled();
-	});
-	it('should call openPp', ()=> 
-	{
-		spyOn(component, 'openPp').and.callThrough();
-		component.openPp();
-		expect(component.openPp).toHaveBeenCalled();
-	});
-	it('should call getPrivacyData and set privacyData', () => 
-	{
-		const mockResponse: ApiResponse = {
-			success: true,
-			message: 'Success',
-			statusCode: 200,
-			data: {
-			  updatedPrivacy: {
-					content: 'Mock Privacy Policy Content'
-			  }
-			}
-		  };
-		spyOn(accountSettingsService, 'getPrivacyPolicyData').and.returnValue(of(mockResponse));
-		component.getPrivacyData();
-		expect(accountSettingsService.getPrivacyPolicyData).toHaveBeenCalled();
-		expect(component.privacyData).toEqual('Mock Privacy Policy Content');
-	  });
-	it('should call getTermsData and set TermsData', () => 
-	{
-		const mockResponse: ApiResponse = {
-			success: true,
-			message: 'Success',
-			statusCode: 200,
-			data: {
-				updatedTerms: {
-					content: 'Mock Terms and Condition Content'
-				  }
-			}
-			  };
-		spyOn(accountSettingsService, 'getTermsAndConditionsData').and.returnValue(of(mockResponse));
-		component.getTermsData();
-		expect(accountSettingsService.getTermsAndConditionsData).toHaveBeenCalled();
-		expect(component.termsData).toEqual('Mock Terms and Condition Content');
-	});
-	it('should call getContentPageLabels and set contentPagelabels', () => 
-	{
-		spyOn(accountSettingsService, 'getContentPageData').and.returnValue(of(mockContentPageLabels));
-		component.getContentPageLabels();
-		expect(accountSettingsService.getContentPageData).toHaveBeenCalled();
-		expect(component.contentPagelabels).toEqual(mockContentPageLabels);
-	  });
-	  it('should call handleDownloadPrivacyPolicyClick and downloadPdf with privacy', () => 
-	{
-		spyOn(component, 'downloadPdf');
-		component.handleDownloadPrivacyPolicyClick();
-		expect(component.downloadPdf).toHaveBeenCalledWith('privacy');
-	  });
-	
-	  it('should call handleDownloadTermsAndConditionsClick and downloadPdf with terms', () => 
-	{
-		spyOn(component, 'downloadPdf');
-		component.handleDownloadTermsAndConditionsClick();
-		expect(component.downloadPdf).toHaveBeenCalledWith('terms');
-	  });
-	
-	  it('should call handleDownloadTermsAndConditionsClick and downloadPdf with terms', () => 
-	{
-		spyOn(component, 'downloadPdf');
-		component.handleDownloadTermsAndConditionsClick();
-		expect(component.downloadPdf).toHaveBeenCalledWith('terms');
-	  });
-});
+.remove-duplicate-box-shadow-border {
+  border: none;
+  border-radius: 0px;
+  box-shadow: none;
+}

@@ -108,3 +108,84 @@
   border-radius: 0px;
   box-shadow: none;
 }
+<!-- Restructured Responsive HTML -->
+<div class="main-container">
+  <!-- Top Row: First Time Fix & Same Day Fix -->
+  <div class="widget-container">
+    <div class="widget-column">
+      <div class="widget-item">
+        <kng-item-card [state]="averageFirstTimeFixData" [isServiceView]="true"></kng-item-card>
+      </div>
+      <div class="widget-item">
+        <kng-item-card [state]="averageSameDayFixData" [isServiceView]="true"></kng-item-card>
+      </div>
+    </div>
+    <div class="widget-column">
+      <div class="widget-item">
+        <tmhna-portal-dispatch-status-widget [payload]="payload"></tmhna-portal-dispatch-status-widget>
+      </div>
+    </div>
+  </div>
+
+  <!-- Response & Resolution Time -->
+  <div class="widget-container">
+    <div class="widget-column">
+      <div class="widget-item">
+        <tmhna-portal-avg-response-time-widget widgetType="ResponseTime" [payload]="payload"></tmhna-portal-avg-response-time-widget>
+      </div>
+    </div>
+    <div class="widget-column">
+      <div class="widget-item">
+        <tmhna-portal-avg-response-time-widget widgetType="ResolutionTime" [payload]="payload"></tmhna-portal-avg-response-time-widget>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scheduled Maintenance -->
+  <div class="widget-row" *ngIf="isDataLoaded">
+    <div class="widget-item schedule-widget">
+      <tmhna-portal-schedulemaintenance-widgets [scheduleMaintenanceServiceData]='scheduleMaintenanceServiceData'
+        [scheduleMaintenanceLabel]='labels' [showPageLoader]='showPageLoader' [isDataLoaded]="isDataLoaded">
+      </tmhna-portal-schedulemaintenance-widgets>
+    </div>
+  </div>
+</div>
+
+<!-- Minimal Responsive CSS -->
+<style>
+  .main-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 20px;
+  }
+
+  .widget-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .widget-column {
+    flex: 1 1 100%;
+  }
+
+  @media (min-width: 768px) {
+    .widget-column {
+      flex: 1 1 calc(50% - 10px);
+    }
+  }
+
+  .widget-item {
+    background: #fff;
+    border: 1px solid #dcdcdc;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 16px;
+  }
+
+  .schedule-widget {
+    padding: 0;
+    overflow: hidden;
+  }
+</style>
